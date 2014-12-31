@@ -1,5 +1,4 @@
 
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,7 +17,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * record sample
@@ -259,7 +257,6 @@ public class UserColumnCount {
         job.setReducerClass(SplitReducer.class);
         job.setNumReduceTasks(reduceNum);
 
-
         // the map output is Text, Text
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
@@ -289,5 +286,4 @@ public class UserColumnCount {
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/" + otherArgs[2]));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
-
 }

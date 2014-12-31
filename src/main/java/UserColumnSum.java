@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class UserColumnSum {
 
     public static class SplitMapper
@@ -33,7 +32,6 @@ public class UserColumnSum {
             super.setup(context);
             p = Pattern.compile("^\\d{5,18}$");
         }
-
 
         //100000000       zj:news:news-shwx       1
         @Override
@@ -55,7 +53,6 @@ public class UserColumnSum {
 
     public static class SplitCombiner
             extends Reducer<Text, Text, Text, Text> {
-
         @Override
         public void reduce(Text Id, Iterable<Text> values,
                            Context context
@@ -150,7 +147,6 @@ public class UserColumnSum {
         }
     }
 
-
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
@@ -190,7 +186,6 @@ public class UserColumnSum {
         job.setCombinerClass(SplitCombiner.class);
         job.setReducerClass(SplitReducer.class);
         job.setNumReduceTasks(reduceNum);
-
 
         // the map output is Text, Text
         job.setMapOutputKeyClass(Text.class);

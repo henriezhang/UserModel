@@ -16,86 +16,80 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class UserColumnPv {
-
     public static class SplitMapper
             extends Mapper<Object, Text, Text, Text> {
         Pattern p;
         Matcher m;
 
-
         public void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-            p = Pattern.compile("^\\d{5,18}$");
+            p = Pattern.compile("^\\d{5,12}$");
+        }
+
+        private boolean isValidQQ(String qq) {
+            // 判断QQ是否合法
+            m = p.matcher(qq);
+            return (m.find()) ? true : false;
         }
 
         @Override
         public void map(Object key, Text inValue, Context context) throws IOException, InterruptedException {
-            String[] fields = inValue.toString().split("\\|");
-            if (fields.length < 17) {
-                return;
-            }
+            String[] fields = inValue.toString().split("\\||,");
 
-            m = p.matcher(fields[16]);
-            if (!m.find()) {
-                return;
-            }
-            int pos1 = fields[9].indexOf("L.");
-            if (fields[16].length() >= 5) {
+            if (fields.length >= 17) { // PGV 数据
+                if (!isValidQQ(fields[16])) {
+                    return;
+                }
 
-                if (pos1 >= 0) {
+                String siteValue = null;
+                int pos1 = fields[9].indexOf("L.");
+                if (pos1 >= 0) { // 普通PGV数据
                     int pos2 = fields[9].indexOf("_", pos1);
                     if (pos2 > pos1) {
-
                         String column = fields[9].substring(pos1 + 2, pos2);
-
                         if (column.startsWith("news.milite")) {
-                            String strValue = "milite" + "|" + fields[3] + fields[4];
-                            String normalizedValue = strValue.replaceAll("-", "_");
-                            context.write(new Text(fields[16]), new Text(normalizedValue));
+                            siteValue = "milite";
                         } else if (column.startsWith("news.newssh")) {
-                            String strValue = "society" + "|" + fields[3] + fields[4];
-                            String normalizedValue = strValue.replaceAll("-", "_");
-                            context.write(new Text(fields[16]), new Text(normalizedValue));
+                            siteValue = "society";
                         } else {
                             String[] cls = column.split("\\.");
-
-                            if (cls.length > 0) {
-                                //just keep site, don't take into account all columns
-                                String site = cls[0].trim();
-                                String strValue = site + "|" + fields[3] + fields[4];
-                                String normalizedValue = strValue.replaceAll("-", "_");
-                                context.write(new Text(fields[16]), new Text(normalizedValue));
+                            if (cls.length > 0) {//just keep site, don't take into account all columns
+                                siteValue = cls[0].trim();
                             }
-
-//                            for (int i = 0; i < cls.length; i++)
-//                            {
-//                                String item = cls[0].trim();
-//                                for (int j = 1; j <= i; j++)
-//                                {
-//                                    item += ":" + cls[j].trim();
-//                                }
-//                                String strValue = item + "|" + fields[3] + fields[4];
-//                                String normalizedValue = strValue.replaceAll("-", "_");
-//                                context.write(new Text(fields[16]), new Text(normalizedValue));
-//                            }
                         }
                     }
-                } else {
+                } else {  // 特殊PGV数据
                     String curDomain = fields[3];
                     if (curDomain.equals("film.qq.com") || curDomain.equals("v.qq.com")) {
-                        String strValue = "v" + "|" + fields[3] + fields[4];
-                        String normalizedValue = strValue.replaceAll("-", "_");
-                        context.write(new Text(fields[16]), new Text(normalizedValue));
+                        siteValue = "v";
                     } else if (curDomain.equals("dajia.qq.com")) {
-                        String strValue = "dajia" + "|" + fields[3] + fields[4];
-                        String normalizedValue = strValue.replaceAll("-", "_");
-                        context.write(new Text(fields[16]), new Text(normalizedValue));
+                        siteValue = "dajia";
                     }
                 }
-            }
 
+                if (siteValue != null) {
+                    String strValue = siteValue + "|" + fields[3] + fields[4];
+                    String normValue = strValue.replaceAll("-", "_"); //中划线改成下划线
+                    context.write(new Text(fields[16]), new Text(normValue));
+                }
+            } else if(fields.length >= 13) { // AIO 点击数据
+                if (!isValidQQ(fields[2])) {
+                    return;
+                }
+
+                String url = null;
+                if(fields[9].startsWith("%u7F51%u8D2D")) {  // 老版网购数据
+                    url = fields[10];
+                } else if (fields[9].equals("buy")) { // 新版网购数据
+                    url = fields[8];
+                }
+
+                if(url!=null) { // 如果是合法的网购数据
+                    String normValue = "wanggou|" + url.hashCode(); // 将url地址转化为hashcode
+                    context.write(new Text(fields[2]), new Text(normValue));
+                }
+            }
         }
     }
 
@@ -156,24 +150,29 @@ public class UserColumnPv {
         }
     }
 
-
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (otherArgs.length < 4) {
-            System.err.println("Usage: UserColumnPv <in> <out> <date> <queue> [number]");
-            System.exit(4);
+        if (otherArgs.length < 6) {
+            System.err.println("Usage: UserColumnPv <in_pgv> <in_124> <in_2704> <out> <date> <queue> [number]");
+            System.exit(6);
         }
 
-        int reduceNum = 64;
-        if (otherArgs.length > 4) {
-            reduceNum = Integer.valueOf(otherArgs[4]).intValue();
+        String inPgv = otherArgs[0];
+        String in124 = otherArgs[1];
+        String in2704 = otherArgs[2];
+        String outDir = otherArgs[3];
+        String queueName = otherArgs[4];
+        String date = otherArgs[5];
+        int reduceNum = 200;
+        if (otherArgs.length > 6) {
+            reduceNum = Integer.valueOf(otherArgs[6]).intValue();
         }
 
         conf.set("mapred.max.map.failures.percent", "1");
         //-Dmapred.job.queue.name=gPgv -Dmapred.queue.name=gPgv
-        conf.set("mapred.job.queue.name", otherArgs[3]);
-        conf.set("mapred.queue.name", otherArgs[3]);
+        conf.set("mapred.job.queue.name", queueName);
+        conf.set("mapred.queue.name", queueName);
         conf.set("mapred.reduce.tasks.speculative.execution", "false");
         conf.set("mapred.child.java.opts", "-Xmx2700m");
         conf.set("mapred.reduce.max.attempts", "18");
@@ -185,7 +184,6 @@ public class UserColumnPv {
         job.setReducerClass(SplitReducer.class);
         job.setNumReduceTasks(reduceNum);
 
-
         // the map output is Text, Text
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
@@ -194,14 +192,14 @@ public class UserColumnPv {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
-//        for (int i = 0; i < 24; i++)
-//        {
-//            FileInputFormat.addInputPath(job, new Path(otherArgs[0] + "/" + otherArgs[2] + "/" + String.format("%02d", i)));
-//        }
+        // 输入数据路径
+        FileInputFormat.addInputPath(job, new Path(inPgv + "/" + date));
+        FileInputFormat.addInputPath(job, new Path(in124 + "/" + date));
+        FileInputFormat.addInputPath(job, new Path(in2704 + "/" + date));
 
-        FileInputFormat.addInputPath(job, new Path(otherArgs[0] + "/" + otherArgs[2]));
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/" + otherArgs[2]));
+        // 输出数据路径
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/" + date));
+
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
-
 }
