@@ -275,7 +275,7 @@ public class UserColumnCount {
 
         FileSystem fs = FileSystem.get(conf);
         for (int i = 0; i < dayNum; i++) {
-            String tmpPath = otherArgs[0] + "/" + formatter.format(cd.getTime());
+            String tmpPath = otherArgs[0] + "/ds=" + formatter.format(cd.getTime());
             Path tPath = new Path(tmpPath);
             if (fs.exists(tPath)) {
                 FileInputFormat.addInputPath(job, tPath);
@@ -283,9 +283,9 @@ public class UserColumnCount {
             } else {
                 System.out.println("Not exist " + tmpPath);
             }
-            cd.add(Calendar.DAY_OF_MONTH, 1);
+            cd.add(Calendar.DAY_OF_MONTH, -1);
         }
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/" + otherArgs[2]));
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/ds=" + otherArgs[2]));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }

@@ -6,7 +6,7 @@
 
     <groupId>UserModel</groupId>
     <artifactId>UserModel</artifactId>
-    <version>2.0.6</version>
+    <version>2.0.7</version>
 
     <properties>
         <homedir>E:\jar-packages</homedir>

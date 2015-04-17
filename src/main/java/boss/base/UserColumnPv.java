@@ -199,7 +199,7 @@ public class UserColumnPv {
         FileInputFormat.addInputPath(job, new Path(in2704 + "/ds=" + date)); // 新AIO数据
 
         // 输出数据路径
-        FileOutputFormat.setOutputPath(job, new Path(outDir + "/" + date));
+        FileOutputFormat.setOutputPath(job, new Path(outDir + "/ds=" + date));
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }

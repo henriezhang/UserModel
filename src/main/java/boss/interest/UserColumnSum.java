@@ -35,7 +35,6 @@ public class UserColumnSum {
             p = Pattern.compile("^\\d{5,18}$");
         }
 
-        //100000000       zj:news:news-shwx       1
         @Override
         public void map(Object key, Text inValue, Context context
         ) throws IOException, InterruptedException {
@@ -90,7 +89,7 @@ public class UserColumnSum {
             mapId = new HashMap();
             try {
                 FileSystem fs = FileSystem.get(context.getConfiguration());
-                FSDataInputStream in = fs.open(new Path("user_column_count/" + context.getConfiguration().get("today") + "/part-r-00000"));
+                FSDataInputStream in = fs.open(new Path("qqcom_usermodel_site_count/ds=" + context.getConfiguration().get("today") + "/part-r-00000"));
                 BufferedReader bufread = new BufferedReader(new InputStreamReader(in));
                 String line;
                 String[] list;
@@ -173,7 +172,6 @@ public class UserColumnSum {
         }
 
         conf.set("mapred.max.map.failures.percent", "1");
-        //-Dmapred.job.queue.name=gPgv -Dmapred.queue.name=gPgv
         conf.set("mapred.job.queue.name", otherArgs[3]);
         conf.set("mapred.queue.name", otherArgs[3]);
         conf.set("mapred.reduce.tasks.speculative.execution", "false");
@@ -204,7 +202,7 @@ public class UserColumnSum {
         cd.setTime(dt);
         FileSystem fs = FileSystem.get(conf);
         for (int i = 0; i < dayNum; i++) {
-            String tmpPath = otherArgs[0] + "/" + formatter.format(cd.getTime());
+            String tmpPath = otherArgs[0] + "/ds=" + formatter.format(cd.getTime());
             Path tPath = new Path(tmpPath);
             if (fs.exists(tPath)) {
                 FileInputFormat.addInputPath(job, tPath);
@@ -212,7 +210,7 @@ public class UserColumnSum {
             } else {
                 System.out.println("Not exist " + tmpPath);
             }
-            cd.add(Calendar.DAY_OF_MONTH, 1);
+            cd.add(Calendar.DAY_OF_MONTH, -1);
         }
 
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1] + "/ds=" + otherArgs[2]));

@@ -86,7 +86,7 @@ public class UserUviuvInterest {
             mapId = new HashMap();
             try {
                 FileSystem fs = FileSystem.get(context.getConfiguration());
-                FSDataInputStream in = fs.open(new Path("user_column_count/" + context.getConfiguration().get("today") + "/part-r-00000"));
+                FSDataInputStream in = fs.open(new Path("qqcom_usermodel_site_count/ds=" + context.getConfiguration().get("today") + "/part-r-00000"));
                 BufferedReader bufread = new BufferedReader(new InputStreamReader(in));
                 String line;
                 String[] list;
